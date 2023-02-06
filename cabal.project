@@ -1,0 +1,27 @@
+packages:
+  prof-utils
+
+allow-newer:
+  eventlog2speedscope:hashable,
+  ghc-trace-events:base
+
+package *
+  ghc-options: -fhide-source-paths -haddock
+  profiling-detail: none
+
+source-repository-package
+  type: git
+  location: https://github.com/goodlyrottenapple/pipes-sqlite-simple.git
+  tag: 89a0c38cc2114eab3c1fb03ef6ec25749edf7a42
+
+source-repository-package
+  type: git
+  location: https://github.com/goodlyrottenapple/pipes-ghc-events.git
+  tag: c227d88b88ca74eb56da36668cab8ba2af7b32ee
+  subdir: eventlog2speedscope
+
+source-repository-package
+  type: git
+  location: https://github.com/goodlyrottenapple/pipes-ghc-events.git
+  tag: c227d88b88ca74eb56da36668cab8ba2af7b32ee
+  subdir: pipes-ghc-events

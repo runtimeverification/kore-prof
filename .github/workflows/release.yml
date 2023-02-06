@@ -1,0 +1,186 @@
+name: "Release"
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+
+  check:
+    name: 'Check'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+        with:
+          submodules: recursive
+
+      - name: 'Install Nix'
+        uses: cachix/install-nix-action@v15
+        with:
+          extra_nix_config: |
+            substituters = http://cache.nixos.org https://cache.iog.io
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
+
+      - name: Install Cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: k-framework
+          skipPush: true
+
+      - name: Materialize
+        run: nix run .#update-cabal
+
+      - name: Check materialization
+        run: |
+          if [ -n "$(git status --porcelain 'nix/')" ]; then
+            echo 2>&1 "Error: found modified files"
+            git diff
+            exit 1
+          fi
+
+  release:
+    name: 'Release'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+        with:
+          submodules: recursive
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v14.1
+        with:
+          extra_nix_config: |
+            substituters = http://cache.nixos.org https://hydra.iohk.io
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
+          # Keep nix at <=2.7 https://github.com/NixOS/nix/issues/6572
+          # but >= 2.4 due to ZSTD compression done by cachix >=1.1 https://blog.cachix.org/posts/2022-12-19-zstd-compression/
+          install_url: https://releases.nixos.org/nix/nix-2.7.0/install
+
+      - name: Install Cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: k-framework
+          authToken: '${{ secrets.CACHIX_PUBLIC_TOKEN }}'
+
+      - name: Build
+        run: nix-build -A kore -A project.kore.checks
+
+  cache-cabal:
+    name: 'Cache Cabal'
+    runs-on: ubuntu-20.04
+    env:
+      ghc_version: "9.2.5"
+    steps:
+      - name: Install prerequisites
+        run: |
+          sudo apt install --yes z3
+
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+        with:
+          submodules: recursive
+
+      - name: Cache Cabal package database and store
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+          key: cabal-1-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('cabal.project') }}
+          restore-keys: |
+            cabal-1-${{ runner.os }}-ghc-${{ env.ghc_version }}-
+            cabal-1-${{ runner.os }}-ghc-
+
+      - uses: haskell/actions/setup@v1
+        id: setup-haskell-cabal
+        with:
+          ghc-version: ${{ env.ghc_version }}
+          cabal-version: "3.6"
+
+      - name: Build
+        run: cabal v2-build --enable-tests --enable-benchmarks all
+
+  cache-stack:
+    name: 'Cache Stack'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install prerequisites
+        run: |
+          sudo apt install --yes z3
+
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+        with:
+          submodules: recursive
+
+      - name: Cache Stack root
+        uses: actions/cache@v2
+        with:
+          path: ~/.stack
+          key: stack-1-${{ runner.os }}-${{ hashFiles('stack.yaml.lock') }}
+          restore-keys: |
+            stack-1-${{ runner.os }}-
+            stack-1-
+
+      - uses: haskell/actions/setup@v1
+        id: setup-haskell-stack
+        with:
+          enable-stack: true
+          stack-no-global: true
+          stack-setup-ghc: true
+
+      - name: Build dependencies
+        run: |
+          stack build --test
+
+  cache-stack-haddock:
+    name: 'Cache Stack Haddock'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install prerequisites
+        run: |
+          sudo apt install --yes z3
+
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+        with:
+          submodules: recursive
+
+      - name: Cache Stack root
+        uses: actions/cache@v2
+        with:
+          path: ~/.stack
+          key: stack-haddock-${{ runner.os }}-${{ hashFiles('stack.yaml.lock') }}
+          restore-keys: |
+            stack-haddock-${{ runner.os }}-
+            stack-haddock-
+
+      - uses: haskell/actions/setup@v1
+        id: setup-haskell-stack
+        with:
+          enable-stack: true
+          stack-no-global: true
+          stack-setup-ghc: true
+
+      - name: Check documentation
+        run: |
+          stack haddock --fast
+
+  update-dependents:
+    name: 'Publish Release'
+    runs-on: ubuntu-20.04
+    environment: production
+    needs: [check, release, cache-cabal, cache-stack, cache-stack-haddock]
+    steps:
+      - name: Update dependents
+        env:
+          JENKINS_DEVOPS_TOKEN: ${{ secrets.JENKINS_DEVOPS_TOKEN }}
+        run: |
+          curl --fail 'https://ci.runtimeverification.com/jenkins/buildByToken/buildWithParameters' \
+              --data job=Devops/master                                                              \
+              --data token=$JENKINS_DEVOPS_TOKEN                                                    \
+              --data UPDATE_DEPS=true                                                               \
+              --data UPDATE_DEPS_REPO=runtimeverification/haskell-backend                           \
+              --data UPDATE_DEPS_VERSION=${GITHUB_SHA}
