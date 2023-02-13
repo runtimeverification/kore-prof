@@ -1,9 +1,11 @@
 packages:
-  .
+  kore-prof
 
 allow-newer:
   eventlog2speedscope:hashable,
-  ghc-trace-events:base
+  eventlog2speedscope:optparse-applicative,
+  ghc-trace-events:base,
+--  turtle:*
 
 package *
   ghc-options: -fhide-source-paths -haddock

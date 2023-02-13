@@ -1,4 +1,4 @@
-module Main (main) where
+module KoreProf (main) where
 
 import Data.Proxy
 import GHC.IO.Encoding (setLocaleEncoding, utf8)

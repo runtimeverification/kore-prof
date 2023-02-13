@@ -121,6 +121,7 @@ library
   exposed-modules:
       TSM
     , TSM.UnifyTag
+    , KoreProf
   hs-source-dirs:
     src
   build-depends:
@@ -129,7 +130,8 @@ library
     , extra >= 1.7
     , mtl >= 2.2
     , text >= 1.2
-    -- , transformers >= 0.5.6
+    , eventlog2speedscope
+    , optparse-applicative >=0.14
 
 executable kore-prof
   import: haskell
@@ -137,5 +139,14 @@ executable kore-prof
   main-is: Main.hs
   hs-source-dirs: app
   build-depends: kore-prof-lib
-  build-depends: eventlog2speedscope
-  build-depends: optparse-applicative >=0.14
+
+test-suite kore-prof-test
+  import: haskell
+  import: exe
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: TestGolden.hs
+  build-depends:
+      tasty-golden >= 2.3
+    , turtle >= 1.6.1
+    , kore-prof-lib
