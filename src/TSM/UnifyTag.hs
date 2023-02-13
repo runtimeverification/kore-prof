@@ -44,14 +44,13 @@ Rules -> Rule
    \       V        V
     ---Success --> EndRules
 -}
-module Kore.Util.TSM.UnifyTag (
+module TSM.UnifyTag (
     UnifyTag,
 ) where
 
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
-import Kore.Util.TSM (TimingStateMachine (..), (-->))
-import Prelude.Kore
+import TSM (TimingStateMachine (..), (-->))
 
 data UnifyTag
     = -- | starting to unify term with a set of rules

@@ -1,5 +1,5 @@
 packages:
-  prof-utils
+  .
 
 allow-newer:
   eventlog2speedscope:hashable,

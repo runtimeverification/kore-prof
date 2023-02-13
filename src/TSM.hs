@@ -25,8 +25,8 @@ allowed but will be omitted from the output graph. On unexpected
 transitions (i.e., marker event sequences that are unexpected), the
 tool currently throws an error.
 -}
-module Kore.Util.TSM (
-    module Kore.Util.TSM, --temporary
+module TSM (
+    module TSM, --temporary
 ) where
 
 import Control.Monad.Extra (fold1M)
@@ -38,10 +38,10 @@ import Data.Map.Strict qualified as Map
 import Data.Proxy
 import Data.Text (Text)
 import Data.Text qualified as Text
-import GHC.Float (log)
 import GHC.RTS.Events
-import Prelude.Kore
 import Text.Printf
+import Data.Maybe (fromMaybe, mapMaybe)
+import Debug.Trace (traceM)
 
 graphOf ::
     forall tag.
