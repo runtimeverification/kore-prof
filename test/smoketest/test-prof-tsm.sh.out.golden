@@ -1,4 +1,4 @@
-digraph "test-prof-tsm-eventlog" {
+digraph "test/smoketest/test-prof-tsm-eventlog" {
 Rules -> Rule
   [ penwidth=1.4,
     label="Starting. 1.00μs (+-0.31), total #212 (0.212ms)",
