@@ -1,7 +1,8 @@
 #! /bin/sh
 
+PATH = $(stack path --local-bin) : $PATH
 tar -O -xzf example.eventlog.tgz > test-prof-tsm-eventlog && \
-    ${KORE_PROF:?} \
+    kore-prof \
         --timing-state-machine Unify \
         -o test-prof-tsm.sh.tmp \
         test-prof-tsm-eventlog  \

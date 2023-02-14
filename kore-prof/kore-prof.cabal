@@ -1,5 +1,5 @@
 cabal-version: 2.2
-name:           kore-prof-lib
+name:           kore-prof
 version:        0.60.0.0
 description:    Please see the [README](README.md) file.
 category:       Language
@@ -138,7 +138,7 @@ executable kore-prof
   import: exe
   main-is: Main.hs
   hs-source-dirs: app
-  build-depends: kore-prof-lib
+  build-depends: kore-prof
 
 test-suite kore-prof-test
   import: haskell
@@ -149,4 +149,4 @@ test-suite kore-prof-test
   build-depends:
       tasty-golden >= 2.3
     , turtle >= 1.6.1
-    , kore-prof-lib
+    , kore-prof
